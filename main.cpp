@@ -14,6 +14,7 @@ constexpr std::size_t numRegs = 16;
 constexpr std::size_t stackSize = 16;
 constexpr std::size_t numKeys = 16;
 constexpr std::uint16_t startAddr = 0x200;
+constexpr std::uint16_t endAddr = 0xfff;
 constexpr std::size_t screenWidth = 64;
 constexpr std::size_t screenHeight = 32;
 
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
 	if (!file.is_open()) {
 		std::cout << "Failed to open file.\n";
 	} else {
-		file.read(reinterpret_cast<char*>(ram.data() + 0x200), 0xfff - 0x200);
+		file.read(reinterpret_cast<char*>(ram.data() + startAddr), endAddr - startAddr);
 	}
 
 	// for (int i = 0; i < ram.size(); i++) {
