@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <format>
+#include <fstream>
 #include <iostream>
 
 constexpr std::size_t ramSize = 4096;
@@ -41,9 +42,18 @@ int main(int argc, char **argv) {
 	std::array<std::uint8_t, ramSize> ram = {};
 	std::copy(std::begin(fonts), std::end(fonts), std::begin(ram));
 
-	for (int i = 0; i < ram.size(); i++) {
-		std::cout << std::format("{:x} ", ram[i]);
+	// Read ROM into memory
+	std::string filename = "tetris.ch8";
+	std::ifstream file(filename, std::ios::binary);
+	if (!file.is_open()) {
+		std::cout << "Failed to open file.\n";
+	} else {
+		file.read(reinterpret_cast<char*>(ram.data() + 0x200), 0xfff - 0x200);
 	}
+
+	// for (int i = 0; i < ram.size(); i++) {
+	// 	std::cout << std::format("{:x} ", ram[i]);
+	// }
 
 	return 0;
 }
