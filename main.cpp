@@ -7,6 +7,7 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <stack>
 
 constexpr std::size_t screenWidth = 64;
 constexpr std::size_t screenHeight = 32;
@@ -41,7 +42,7 @@ class Interpreter {
 
 	std::array<std::uint8_t, ramSize> ram = {};
 	std::array<std::uint8_t, numRegs> vRegs = {};		// Do not use VF flags register!
-	std::array<std::uint16_t, stackSize> stack = {};
+	std::stack<std::uint16_t> stack = {};
 	std::array<bool, numKeys> keys = {false};
 	uint8_t dt = 0;
 	uint8_t st = 0;
@@ -73,13 +74,101 @@ public:
 		for (int i = 0; i < ram.size(); i++) {
 			std::cout << std::format("{:x} ", ram[i]);
 		}
+		std::cout << '\n';
+	}
+
+	uint16_t fetch() {
+		uint16_t instruction = (static_cast<uint16_t>(ram[progCtr]) << 8) | ram[progCtr + 1];
+		progCtr += 2;
+		return instruction;
+	}
+
+	void execute(uint16_t instruction) {
+		// Decode
+		uint16_t first = (instruction & 0xf000) >> 12;
+		uint16_t second = (instruction & 0x0f00) >> 8;
+		uint16_t third = (instruction & 0x00f0) >> 4;
+		uint16_t fourth = instruction & 0x000f;
+		std::cout << std::format("Decoded: {:x} | {:x} | {:x} | {:x}\n", first, second, third, fourth);
+
+		// Execute:
+		switch(first) {
+		case 0x0:
+			switch(fourth) {
+			case 0x0:
+				// Clear display
+				break;
+			case 0xe:
+				// Return from subroutine
+				//progCtr = stack.pop();
+				//stackPtr--;
+				break;
+			}
+			break;
+		case 0x1:
+			// Jump to NNN
+			progCtr = (instruction & 0x0fff) << 4;
+			std::cout << std::format("Jumping to {:x}\n", progCtr);
+			break;
+		case 0x2:
+			break;
+		case 0x3:
+			break;
+		case 0x4:
+			break;
+		case 0x5:
+			break;
+		case 0x6:
+			break;
+		case 0x7:
+			break;
+		case 0x8:
+			break;
+		case 0x9:
+			break;
+		case 0xa:
+			break;
+		case 0xb:
+			break;
+		case 0xc:
+			break;
+		case 0xd:
+			break;
+		case 0xe:
+			break;
+		case 0xf:
+			break;
+		default:
+			std::cout << "Invalid instruction\n";
+			break;
+		}
 	}
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char* argv[]) {
 	Interpreter interp;
 	interp.loadRom("tetris.ch8");
 	interp.printRam();
+
+	uint16_t instruction = 0;
+	instruction = interp.fetch();
+	std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
+	//interp.execute(instruction);
+
+	interp.execute(0x1abc);
+
+	while (true) { // Should run around 700 instructions per second
+		break;
+		// Fetch
+		instruction = interp.fetch();
+		// std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
+		// if (instruction == 0) {
+		// 	break;
+		// }
+
+		// Decode + execute
+		interp.execute(instruction);
+	}
 
 	return 0;
 }
