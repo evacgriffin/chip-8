@@ -139,6 +139,7 @@ public:
 				progCtr = stack.top();
 				stack.pop();
 				stackPtr--;
+				std::cout << std::format("Returning from subroutine to {:x}\n", progCtr);
 				break;
 			}
 			break;
@@ -148,12 +149,32 @@ public:
 			std::cout << std::format("Jumping to {:x}\n", progCtr);
 			break;
 		case 0x2:
+			// Call subroutine
+			stack.push(progCtr);
+			stackPtr++;
+			progCtr = instruction & 0x0fff;
+			std::cout << std::format("Calling subroutine at {:x}\n", progCtr);
 			break;
 		case 0x3:
+			if (vRegs[static_cast<int>(second)] == (instruction & 0x00ff)) {
+				// Skip next instruction
+				progCtr += 2;
+				std::cout << std::format("Skipping next instruction due to vReg == NN. Continuing execution at {:x}\n", progCtr);
+			}
 			break;
 		case 0x4:
+			if (vRegs[static_cast<int>(second)] != (instruction & 0x00ff)) {
+				// Skip next instruction
+				progCtr += 2;
+				std::cout << std::format("Skipping next instruction due to vReg != NN. Continuing execution at {:x}\n", progCtr);
+			}
 			break;
 		case 0x5:
+			if (vRegs[static_cast<int>(second)] == vRegs[static_cast<int>(third)]) {
+				// Skip next instruction
+				progCtr += 2;
+				std::cout << std::format("Skipping next instruction due to vX == vY. Continuing execution at {:x}\n", progCtr);
+			}
 			break;
 		case 0x6:
 			// Set vReg
@@ -168,6 +189,11 @@ public:
 		case 0x8:
 			break;
 		case 0x9:
+			if (vRegs[static_cast<int>(second)] != vRegs[static_cast<int>(third)]) {
+				// Skip next instruction
+				progCtr += 2;
+				std::cout << std::format("Skipping next instruction due to vX != vY. Continuing execution at {:x}\n", progCtr);
+			}
 			break;
 		case 0xa:
 			// Set iReg
@@ -175,10 +201,17 @@ public:
 			std::cout << std::format("Setting iReg to {:x}\n", instruction & 0x0fff);
 			break;
 		case 0xb:
+			// Change program counter
+			progCtr = vRegs[0] + (instruction & 0x0fff);
+			std::cout << std::format("Setting program counter to {:x}\n", progCtr);
 			break;
 		case 0xc:
+			// Randomize vReg
+			std::cout << "Randomizing vReg...\n";
 			break;
 		case 0xd:
+			// Display sprite
+			std::cout << "Displaying sprite...\n";
 			break;
 		case 0xe:
 			break;
