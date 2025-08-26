@@ -132,17 +132,19 @@ public:
 			switch(fourth) {
 			case 0x0:
 				// Clear display
+				std::cout << "Clearing screen...\n";
 				break;
 			case 0xe:
 				// Return from subroutine
-				//progCtr = stack.pop();
-				//stackPtr--;
+				progCtr = stack.top();
+				stack.pop();
+				stackPtr--;
 				break;
 			}
 			break;
 		case 0x1:
 			// Jump to NNN
-			progCtr = (instruction & 0x0fff) << 4;
+			progCtr = instruction & 0x0fff;
 			std::cout << std::format("Jumping to {:x}\n", progCtr);
 			break;
 		case 0x2:
@@ -154,14 +156,23 @@ public:
 		case 0x5:
 			break;
 		case 0x6:
+			// Set vReg
+			vRegs[static_cast<int>(second)] = instruction & 0x00ff;
+			std::cout << std::format("Setting V{} to {:x}\n", static_cast<int>(second), instruction & 0x00ff);
 			break;
 		case 0x7:
+			// Add value to vReg
+			vRegs[static_cast<int>(second)] += instruction & 0x00ff;
+			std::cout << std::format("Adding {:x} to V{}\n", instruction & 0x00ff, static_cast<int>(second));
 			break;
 		case 0x8:
 			break;
 		case 0x9:
 			break;
 		case 0xa:
+			// Set iReg
+			iReg = instruction & 0x0fff;
+			std::cout << std::format("Setting iReg to {:x}\n", instruction & 0x0fff);
 			break;
 		case 0xb:
 			break;
@@ -187,23 +198,16 @@ int main(int argc, char* argv[]) {
 	interp.dumpState();
 
 	uint16_t instruction = 0;
-	instruction = interp.fetch();
-	std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
-	//interp.execute(instruction);
-
-	interp.execute(0x1abc);
-
 	while (true) { // Should run around 700 instructions per second
-		break;
 		// Fetch
 		instruction = interp.fetch();
-		// std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
-		// if (instruction == 0) {
-		// 	break;
-		// }
+		std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
 
 		// Decode + execute
 		interp.execute(instruction);
+
+		// Debug
+		interp.dumpState();
 	}
 
 	return 0;
