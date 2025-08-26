@@ -40,13 +40,13 @@ class Interpreter {
 	};
 
 	std::array<std::uint8_t, ramSize> ram = {};
-	std::array<std::uint8_t, numRegs> regs = {};		// Do not use VF flags register!
+	std::array<std::uint8_t, numRegs> vRegs = {};		// Do not use VF flags register!
 	std::array<std::uint16_t, stackSize> stack = {};
 	std::array<bool, numKeys> keys = {false};
-	uint8_t delayTimer = 0;
-	uint8_t soundTimer = 0;
-	uint16_t indexReg = 0;
-	uint16_t programCtr = startAddr;
+	uint8_t dt = 0;
+	uint8_t st = 0;
+	uint16_t iReg = 0;
+	uint16_t progCtr = startAddr;
 	uint8_t stackPtr = 0;
 
     // Buzzer for beep sound
