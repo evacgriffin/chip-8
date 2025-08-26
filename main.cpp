@@ -71,10 +71,45 @@ public:
 	}
 
 	void printRam() {
+		std::cout << "RAM:\n";
 		for (int i = 0; i < ram.size(); i++) {
 			std::cout << std::format("{:x} ", ram[i]);
 		}
 		std::cout << '\n';
+	}
+
+	void dumpState() {
+		std::cout << std::format("VREGS: |");
+		for (int i = 0; i < vRegs.size(); i++) {
+			std::cout << std::format(" {:x} |", vRegs[i]);
+		}
+		std::cout << '\n';
+
+		std::cout << std::format("Stack Ptr: {:x}\n", stackPtr);
+		std::cout << std::format("STACK:");
+		std::stack<uint16_t> temp = stack;
+		if (temp.empty()) {
+			std::cout << " empty";
+		} else {
+			while (!temp.empty()) {
+				std::cout << std::format(" {:x} |", temp.top());
+				temp.pop();
+			}
+		}
+		std::cout << '\n';
+
+		std::cout << std::format("KEYS: |");
+		for (int i = 0; i < keys.size(); i++) {
+			std::cout << std::format(" {:x} |", keys[i]);
+		}
+		std::cout << '\n';
+
+		std::cout << std::format("Delay Timer: {:x}\n", dt);
+		std::cout << std::format("Sound Timer: {:x}\n", st);
+		std::cout << std::format("Index Register: {:x}\n", iReg);
+		std::cout << std::format("Program Counter: {:x}\n", progCtr);
+
+		printRam();
 	}
 
 	uint16_t fetch() {
@@ -148,7 +183,8 @@ public:
 int main(int argc, char* argv[]) {
 	Interpreter interp;
 	interp.loadRom("tetris.ch8");
-	interp.printRam();
+
+	interp.dumpState();
 
 	uint16_t instruction = 0;
 	instruction = interp.fetch();
