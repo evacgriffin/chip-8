@@ -9,8 +9,9 @@
 #include <iostream>
 #include <stack>
 
-constexpr std::size_t screenWidth = 64;
-constexpr std::size_t screenHeight = 32;
+constexpr int scale = 10;
+constexpr std::size_t screenWidth = 64 * scale;
+constexpr std::size_t screenHeight = 32 * scale;
 
 class Interpreter {
 	static constexpr std::size_t ramSize = 4096;
@@ -51,7 +52,6 @@ class Interpreter {
 	uint8_t stackPtr = 0;
 
     // Buzzer for beep sound
-    // Display
 
 public:
 	Interpreter() {
@@ -73,7 +73,10 @@ public:
 	void printRam() {
 		std::cout << "RAM:\n";
 		for (int i = 0; i < ram.size(); i++) {
-			std::cout << std::format("{:x} ", ram[i]);
+			if (i % 16 == 0) {
+				std::cout << '\n';
+			}
+			std::cout << std::format("{:02x} ", ram[i]);
 		}
 		std::cout << '\n';
 	}
@@ -225,15 +228,41 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+	// Initialize SDL
+	if(!SDL_Init(SDL_INIT_VIDEO)) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing SDL3", nullptr);
+		return 1;
+	}
+
+	// Create interpreter
 	Interpreter interp;
 	interp.loadRom("tetris.ch8");
 
-	interp.dumpState();
+	// Create display
+	SDL_Window *display = SDL_CreateWindow("Chip-8", screenWidth, screenHeight, 0);
+	if (!display) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating display", display);
+		SDL_DestroyWindow(display);
+		SDL_Quit();
+		return 1;
+	}
 
-	uint16_t instruction = 0;
-	while (true) { // Should run around 700 instructions per second
+	//interp.dumpState();
+
+	bool running = true;
+	while (running) { // Should run around 700 instructions per second
+		SDL_Event event{ 0 };
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
+			case SDL_EVENT_QUIT:
+				{
+					running = false;
+					break;
+				}
+			}
+		}
 		// Fetch
-		instruction = interp.fetch();
+		uint16_t instruction = interp.fetch();
 		std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
 
 		// Decode + execute
@@ -241,7 +270,11 @@ int main(int argc, char* argv[]) {
 
 		// Debug
 		interp.dumpState();
+		// Get user input and execute debug options, e.g. "ram" to dump ram, "quit" etc.
+		std::cin.get();
 	}
 
+	SDL_DestroyWindow(display);
+	SDL_Quit();
 	return 0;
 }
