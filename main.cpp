@@ -9,9 +9,12 @@
 #include <iostream>
 #include <stack>
 
+void cleanupSDL(SDL_Window *display);
+
 constexpr int scale = 10;
 constexpr std::size_t screenWidth = 64 * scale;
 constexpr std::size_t screenHeight = 32 * scale;
+using DisplayArray = std::array<bool, screenWidth * screenHeight>;
 
 class Interpreter {
 	static constexpr std::size_t ramSize = 4096;
@@ -42,6 +45,7 @@ class Interpreter {
 	};
 
 	std::array<std::uint8_t, ramSize> ram = {};
+	DisplayArray display = {};
 	std::array<std::uint8_t, numRegs> vRegs = {};		// Do not use VF flags register!
 	std::stack<std::uint16_t> stack = {};
 	std::array<bool, numKeys> keys = {false};
@@ -51,23 +55,33 @@ class Interpreter {
 	uint16_t progCtr = startAddr;
 	uint8_t stackPtr = 0;
 
-    // Buzzer for beep sound
-
 public:
 	Interpreter() {
 		// Initialize RAM with fonts data
 		std::copy(std::begin(fonts), std::end(fonts), std::begin(ram));
 	}
 
-	bool loadRom(std::string filename) {
+	bool loadRom(std::string const& filename) {
 		std::ifstream file(filename, std::ios::binary);
 		if (!file.is_open()) {
-			std::cout << "Failed to open file.\n";
 			return false;
 		} else {
 			file.read(reinterpret_cast<char*>(ram.data() + startAddr), endAddr - startAddr);
 			return true;
 		}
+	}
+
+	DisplayArray& getDisplay() {
+		return display;
+	}
+
+	void pressKey(int idx, bool pressed) {
+		if (idx < 0 || idx >= keys.size()) {
+			std::cout << "Key press error. Index out of bounds.\n";
+			return;
+		}
+
+		keys[idx] = pressed;
 	}
 
 	void printRam() {
@@ -113,6 +127,28 @@ public:
 		std::cout << std::format("Program Counter: {:x}\n", progCtr);
 
 		printRam();
+	}
+
+	void tick() {
+		uint16_t instruction = fetch();
+		std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
+
+		// Decode and execute the instruction
+		execute(instruction);
+	}
+
+private:
+	void tickTimers() {
+		if (dt > 0) {
+			dt--;
+		}
+
+		if (st > 0) {
+			if (st == 1) {
+				// Play beep
+			}
+			st--;
+		}
 	}
 
 	uint16_t fetch() {
@@ -228,26 +264,33 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+	if (argc < 2) {
+		std::cout << "Usage: path.exe filename\n";
+		return 1;
+	}
+	
+	std::string romName = argv[1];
+
 	// Initialize SDL
-	if(!SDL_Init(SDL_INIT_VIDEO)) {
+	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing SDL3", nullptr);
 		return 1;
 	}
-
-	// Create interpreter
-	Interpreter interp;
-	interp.loadRom("tetris.ch8");
 
 	// Create display
 	SDL_Window *display = SDL_CreateWindow("Chip-8", screenWidth, screenHeight, 0);
 	if (!display) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating display", display);
-		SDL_DestroyWindow(display);
-		SDL_Quit();
+		cleanupSDL(display);
 		return 1;
 	}
 
-	//interp.dumpState();
+	// Create interpreter
+	Interpreter interp;
+	if (!interp.loadRom(romName)) {
+		std::cout << std::format("Could not open file named {}.\n", romName);
+		return 1;
+	}
 
 	bool running = true;
 	while (running) { // Should run around 700 instructions per second
@@ -255,26 +298,29 @@ int main(int argc, char* argv[]) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_EVENT_QUIT:
-				{
-					running = false;
-					break;
-				}
+				running = false;
+				break;
 			}
 		}
-		// Fetch
-		uint16_t instruction = interp.fetch();
-		std::cout << std::format("\nCurrent instruction: {:x}\n", instruction);
 
-		// Decode + execute
-		interp.execute(instruction);
+		interp.tick();
+		// // Fetch
+		// uint16_t instruction = interp.fetch();
 
-		// Debug
-		interp.dumpState();
-		// Get user input and execute debug options, e.g. "ram" to dump ram, "quit" etc.
-		std::cin.get();
+		// // Decode + execute
+		// interp.execute(instruction);
+
+		// // Debug
+		// interp.dumpState();
+		// // Get user input and execute debug options, e.g. "ram" to dump ram, "quit" etc.
+		// std::cin.get();
 	}
 
+	cleanupSDL(display);
+	return 0;
+}
+
+void cleanupSDL(SDL_Window *display) {
 	SDL_DestroyWindow(display);
 	SDL_Quit();
-	return 0;
 }
