@@ -1,3 +1,8 @@
+// References:
+// SDL3 Tutorial by constref on YouTube: https://www.youtube.com/watch?v=Wu2g-N5Z78Y
+// Guide to making a CHIP-8 emulator by Tobias V. Langhoff: https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+// Cowgod's Chip-8 Technical Reference: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
@@ -8,8 +13,6 @@
 #include <fstream>
 #include <iostream>
 #include <stack>
-
-void cleanupSDL(SDL_Window *display);
 
 constexpr int scale = 10;
 constexpr std::size_t screenWidth = 64 * scale;
@@ -263,6 +266,13 @@ private:
 	}
 };
 
+struct SDLState {
+	SDL_Window *display;
+	SDL_Renderer *renderer;
+};
+
+void cleanupSDL(SDLState &state);
+
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
 		std::cout << "Usage: path.exe filename\n";
@@ -272,16 +282,25 @@ int main(int argc, char* argv[]) {
 	std::string romName = argv[1];
 
 	// Initialize SDL
+	SDLState state;
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing SDL3", nullptr);
 		return 1;
 	}
 
 	// Create display
-	SDL_Window *display = SDL_CreateWindow("Chip-8", screenWidth, screenHeight, 0);
-	if (!display) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating display", display);
-		cleanupSDL(display);
+	state.display = SDL_CreateWindow("Chip-8", screenWidth, screenHeight, 0);
+	if (!state.display) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating display", nullptr);
+		cleanupSDL(state);
+		return 1;
+	}
+
+	// Create renderer
+	state.renderer = SDL_CreateRenderer(state.display, nullptr);
+	if (!state.renderer) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating renderer", nullptr);
+		cleanupSDL(state);
 		return 1;
 	}
 
@@ -303,12 +322,14 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		interp.tick();
-		// // Fetch
-		// uint16_t instruction = interp.fetch();
+		// Perform drawing commands
+		SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+		SDL_RenderClear(state.renderer);
 
-		// // Decode + execute
-		// interp.execute(instruction);
+		// Swap buffers and present
+		SDL_RenderPresent(state.renderer);
+
+		interp.tick();
 
 		// // Debug
 		// interp.dumpState();
@@ -316,11 +337,12 @@ int main(int argc, char* argv[]) {
 		// std::cin.get();
 	}
 
-	cleanupSDL(display);
+	cleanupSDL(state);
 	return 0;
 }
 
-void cleanupSDL(SDL_Window *display) {
-	SDL_DestroyWindow(display);
+void cleanupSDL(SDLState &state) {
+	SDL_DestroyRenderer(state.renderer);
+	SDL_DestroyWindow(state.display);
 	SDL_Quit();
 }
