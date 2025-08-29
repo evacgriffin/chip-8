@@ -229,6 +229,63 @@ private:
 			std::cout << std::format("Adding {:x} to V{}\n", instruction & 0x00ff, static_cast<int>(second));
 			break;
 		case 0x8:
+			switch(fourth) {
+			case 0x0:
+				std::cout << std::format("Putting value of register v{:x} into register v{:x}\n", third, second);
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(third)];
+				break;
+			case 0x1:
+				std::cout << std::format("Performing v{:x} | v{:x} and storing in v{:x}\n", second, third, second);
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] | vRegs[static_cast<int>(third)];
+				break;
+			case 0x2:
+				std::cout << std::format("Performing v{:x} & v{:x} and storing in v{:x}\n", second, third, second);
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] & vRegs[static_cast<int>(third)];
+				break;
+			case 0x3:
+				std::cout << std::format("Performing v{:x} XOR v{:x} and storing in v{:x}\n", second, third, second);
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] ^ vRegs[static_cast<int>(third)];
+				break;
+			case 0x4:
+				std::cout << std::format("Adding v{:x} and v{:x} and storing in v{:x}\n", second, third, second);
+				if (vRegs[static_cast<int>(second)] + vRegs[static_cast<int>(third)] > 0xff) {
+					vRegs[static_cast<int>(0xf)] = 1;
+				} else {
+					vRegs[static_cast<int>(0xf)] = 0;
+				}
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] + vRegs[static_cast<int>(third)];
+				break;
+			case 0x5:
+				std::cout << std::format("Subtracting v{:x} from v{:x} and storing in v{:x}\n", third, second, second);
+				if (vRegs[static_cast<int>(second)] > vRegs[static_cast<int>(third)]) {
+					vRegs[static_cast<int>(0xf)] = 1;
+				} else {
+					vRegs[static_cast<int>(0xf)] = 0;
+				}
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] - vRegs[static_cast<int>(third)];
+				break;
+			case 0x6:
+				std::cout << std::format("Setting v{:x} = v{:x} SHR 1\n", second, second);
+				// Set vF to 1 if LSB of vX is 1
+				vRegs[static_cast<int>(0xf)] = vRegs[static_cast<int>(second)] & 0x01;
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] / 2;
+				break;
+			case 0x7:
+				std::cout << std::format("Subtracting v{:x} from v{:x} and storing in v{:x}, setting vF to 1 if there is no borrow\n", second, third, second);
+				if (vRegs[static_cast<int>(third)] > vRegs[static_cast<int>(second)]) {
+					vRegs[static_cast<int>(0xf)] = 1;
+				} else {
+					vRegs[static_cast<int>(0xf)] = 0;
+				}
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(third)] - vRegs[static_cast<int>(second)];
+				break;
+			case 0xe:
+				std::cout << std::format("Setting v{:x} = v{:x} SHL 1\n", second, second);
+				// Set vF to 1 if MSB of vX is 1
+				vRegs[static_cast<int>(0xf)] = vRegs[static_cast<int>(second)] & 0x80;
+				vRegs[static_cast<int>(second)] = vRegs[static_cast<int>(second)] * 2;
+				break;
+			}
 			break;
 		case 0x9:
 			if (vRegs[static_cast<int>(second)] != vRegs[static_cast<int>(third)]) {
